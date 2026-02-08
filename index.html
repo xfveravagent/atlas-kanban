@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas Kanban — Xavier's Task Board</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #30363d;
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #f0f6fc;
+    }
+    
+    h1 span { opacity: 0.6; font-weight: 400; }
+    
+    .add-task-btn {
+      background: #238636;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .add-task-btn:hover { background: #2ea043; }
+    
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      height: calc(100vh - 120px);
+    }
+    
+    .column {
+      background: #161b22;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #30363d;
+    }
+    
+    .column-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .column-count {
+      background: #30363d;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+    
+    .tasks {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 100px;
+    }
+    
+    .tasks.drag-over {
+      background: rgba(56, 139, 253, 0.1);
+      border-radius: 6px;
+    }
+    
+    .task {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: grab;
+      transition: all 0.15s ease;
+    }
+    
+    .task:hover {
+      border-color: #58a6ff;
+    }
+    
+    .task.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+    
+    .task-domain {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+    
+    .task-domain.mm { background: #1f6feb; color: white; }
+    .task-domain.geo { background: #f78166; color: white; }
+    .task-domain.exp { background: #a371f7; color: white; }
+    
+    .task-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #f0f6fc;
+    }
+    
+    .task-desc {
+      font-size: 12px;
+      color: #8b949e;
+      line-height: 1.4;
+    }
+    
+    .task-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #30363d;
+    }
+    
+    .task-date {
+      font-size: 11px;
+      color: #8b949e;
+    }
+    
+    .task-delete {
+      background: none;
+      border: none;
+      color: #f85149;
+      cursor: pointer;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    
+    .task:hover .task-delete { opacity: 1; }
+    
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    
+    .modal-overlay.active { display: flex; }
+    
+    .modal {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+    }
+    
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #f0f6fc;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #c9d1d9;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #c9d1d9;
+      font-size: 14px;
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .btn-secondary {
+      background: #21262d;
+      color: #c9d1d9;
+    }
+    
+    .btn-primary {
+      background: #238636;
+      color: white;
+    }
+    
+    .btn:hover { filter: brightness(1.1); }
+
+    /* Filter tabs */
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .filter-btn {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid #30363d;
+      background: transparent;
+      color: #8b949e;
+      transition: all 0.15s;
+    }
+    
+    .filter-btn:hover,
+    .filter-btn.active {
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+    
+    .filter-btn.active { background: rgba(56, 139, 253, 0.1); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏛️ Atlas Kanban <span>— Xavier's Task Board</span></h1>
+    <button class="add-task-btn" onclick="openModal()">+ Add Task</button>
+  </header>
+  
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="mm" style="border-color: #1f6feb; color: #1f6feb;">[MM] MetaMask</button>
+    <button class="filter-btn" data-filter="geo" style="border-color: #f78166; color: #f78166;">[GEO] Geoestudios</button>
+    <button class="filter-btn" data-filter="exp" style="border-color: #a371f7; color: #a371f7;">[EXP] Exploration</button>
+  </div>
+  
+  <div class="board">
+    <div class="column" data-status="backlog">
+      <div class="column-header">
+        <span class="column-title">Backlog</span>
+        <span class="column-count">0</span>
+      </div>
+      <div class="tasks" data-status="backlog"></div>
+    </div>
+    
+    <div class="column" data-status="todo">
+      <div class="column-header">
+        <span class="column-title">To Do</span>
+        <span class="column-count">0</span>
+      </div>
+      <div class="tasks" data-status="todo"></div>
+    </div>
+    
+    <div class="column" data-status="inprogress">
+      <div class="column-header">
+        <span class="column-title">In Progress</span>
+        <span class="column-count">0</span>
+      </div>
+      <div class="tasks" data-status="inprogress"></div>
+    </div>
+    
+    <div class="column" data-status="done">
+      <div class="column-header">
+        <span class="column-title">Done</span>
+        <span class="column-count">0</span>
+      </div>
+      <div class="tasks" data-status="done"></div>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>Add New Task</h2>
+      <form id="taskForm">
+        <div class="form-group">
+          <label>Domain</label>
+          <select name="domain" required>
+            <option value="mm">[MM] MetaMask / Consensys</option>
+            <option value="geo">[GEO] Geoestudios</option>
+            <option value="exp">[EXP] Exploration</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" name="title" required placeholder="What needs to be done?">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea name="desc" placeholder="Details, context, links..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="backlog">Backlog</option>
+            <option value="todo" selected>To Do</option>
+            <option value="inprogress">In Progress</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    let tasks = JSON.parse(localStorage.getItem('atlas-tasks')) || [];
+    let activeFilter = 'all';
+    
+    function saveTasks() {
+      localStorage.setItem('atlas-tasks', JSON.stringify(tasks));
+    }
+    
+    function renderTasks() {
+      document.querySelectorAll('.tasks').forEach(col => col.innerHTML = '');
+      
+      const filteredTasks = activeFilter === 'all' 
+        ? tasks 
+        : tasks.filter(t => t.domain === activeFilter);
+      
+      filteredTasks.forEach(task => {
+        const taskEl = document.createElement('div');
+        taskEl.className = 'task';
+        taskEl.draggable = true;
+        taskEl.dataset.id = task.id;
+        
+        const domainLabels = { mm: 'MM', geo: 'GEO', exp: 'EXP' };
+        
+        taskEl.innerHTML = `
+          <span class="task-domain ${task.domain}">[${domainLabels[task.domain]}]</span>
+          <div class="task-title">${task.title}</div>
+          ${task.desc ? `<div class="task-desc">${task.desc}</div>` : ''}
+          <div class="task-meta">
+            <span class="task-date">${task.date}</span>
+            <button class="task-delete" onclick="deleteTask('${task.id}')">Delete</button>
+          </div>
+        `;
+        
+        taskEl.addEventListener('dragstart', handleDragStart);
+        taskEl.addEventListener('dragend', handleDragEnd);
+        
+        document.querySelector(`.tasks[data-status="${task.status}"]`).appendChild(taskEl);
+      });
+      
+      updateCounts();
+    }
+    
+    function updateCounts() {
+      document.querySelectorAll('.column').forEach(col => {
+        const status = col.dataset.status;
+        const count = col.querySelector('.tasks').children.length;
+        col.querySelector('.column-count').textContent = count;
+      });
+    }
+    
+    function handleDragStart(e) {
+      e.target.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', e.target.dataset.id);
+    }
+    
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.tasks').forEach(t => t.classList.remove('drag-over'));
+    }
+    
+    document.querySelectorAll('.tasks').forEach(tasksContainer => {
+      tasksContainer.addEventListener('dragover', e => {
+        e.preventDefault();
+        tasksContainer.classList.add('drag-over');
+      });
+      
+      tasksContainer.addEventListener('dragleave', () => {
+        tasksContainer.classList.remove('drag-over');
+      });
+      
+      tasksContainer.addEventListener('drop', e => {
+        e.preventDefault();
+        tasksContainer.classList.remove('drag-over');
+        
+        const taskId = e.dataTransfer.getData('text/plain');
+        const newStatus = tasksContainer.dataset.status;
+        
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          task.status = newStatus;
+          saveTasks();
+          renderTasks();
+        }
+      });
+    });
+    
+    function openModal() {
+      document.getElementById('modal').classList.add('active');
+    }
+    
+    function closeModal() {
+      document.getElementById('modal').classList.remove('active');
+      document.getElementById('taskForm').reset();
+    }
+    
+    document.getElementById('taskForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const form = e.target;
+      
+      const task = {
+        id: Date.now().toString(),
+        domain: form.domain.value,
+        title: form.title.value,
+        desc: form.desc.value,
+        status: form.status.value,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      };
+      
+      tasks.push(task);
+      saveTasks();
+      renderTasks();
+      closeModal();
+    });
+    
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+      renderTasks();
+    }
+    
+    // Filters
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter;
+        renderTasks();
+      });
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal();
+      if (e.key === 'n' && !document.getElementById('modal').classList.contains('active')) {
+        e.preventDefault();
+        openModal();
+      }
+    });
+    
+    // Initial render
+    renderTasks();
+  </script>
+</body>
+</html>
