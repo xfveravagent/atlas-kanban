@@ -292,6 +292,7 @@
   <header>
     <h1>🏛️ Atlas Kanban <span>— Xavier's Task Board</span></h1>
     <button class="add-task-btn" onclick="openModal()">+ Add Task</button>
+    <button class="add-task-btn" style="background:#6e40c9;margin-left:8px;" onclick="resetTasks()">↻ Reset</button>
   </header>
   
   <div class="filters">
@@ -529,6 +530,14 @@
         openModal();
       }
     });
+    
+    function resetTasks() {
+      if (confirm('Reset to default tasks? This will clear your current board.')) {
+        tasks = [...defaultTasks];
+        saveTasks();
+        renderTasks();
+      }
+    }
     
     // Initial render
     renderTasks();
