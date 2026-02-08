@@ -372,7 +372,27 @@
   </div>
   
   <script>
-    let tasks = JSON.parse(localStorage.getItem('atlas-tasks')) || [];
+    const defaultTasks = [
+      // [MM] MetaMask
+      { id: 'mm1', domain: 'mm', title: 'Evaluate Tempo RFP for mUSD', desc: 'Analyze RFP for Smart Cash Account integration', status: 'inprogress', date: 'Feb 7' },
+      { id: 'mm2', domain: 'mm', title: 'Launchpad partnership analysis', desc: 'USD1/BONK.fun case study - bonding curve mechanics', status: 'todo', date: 'Feb 7' },
+      { id: 'mm3', domain: 'mm', title: 'mUSD stablecoin growth strategy', desc: 'Growing neobank experience and mUSD adoption', status: 'backlog', date: 'Feb 7' },
+      // [GEO] Geoestudios
+      { id: 'geo1', domain: 'geo', title: 'Director of BD hiring - Elisa Moran', desc: 'Currently in compensation negotiation phase', status: 'inprogress', date: 'Feb 7' },
+      { id: 'geo2', domain: 'geo', title: 'Formalize revenue share agreement', desc: '50% gross profit agreement with Xavier Sr.', status: 'todo', date: 'Feb 7' },
+      { id: 'geo3', domain: 'geo', title: 'Define operational structure', desc: 'New business unit org design', status: 'backlog', date: 'Feb 7' },
+      // [EXP] Exploration  
+      { id: 'exp1', domain: 'exp', title: 'First principles geology research', desc: 'Epithermal vs porphyry systems, Ecuador metallogenic belts', status: 'done', date: 'Feb 7' },
+      { id: 'exp2', domain: 'exp', title: 'QGIS setup + concession analysis', desc: 'El Oro catastro loaded, 656 concessions mapped', status: 'done', date: 'Feb 7' },
+      { id: 'exp3', domain: 'exp', title: 'Gap analysis - find open ground', desc: 'Identify unclaimed areas near Portovelo-Zaruma', status: 'inprogress', date: 'Feb 7' },
+      { id: 'exp4', domain: 'exp', title: 'Source geological maps (IIGE)', desc: 'Overlay rock types and structures on concession data', status: 'todo', date: 'Feb 7' },
+      { id: 'exp5', domain: 'exp', title: 'Field reconnaissance planning', desc: 'Top 3-5 targets for site visits', status: 'backlog', date: 'Feb 7' },
+      { id: 'exp6', domain: 'exp', title: 'Exploration budget model', desc: '~$1M framework - phased approach', status: 'backlog', date: 'Feb 7' },
+      { id: 'exp7', domain: 'exp', title: 'WhatsApp account setup', desc: 'Google Voice +1 401 589 1034 - pending auth', status: 'inprogress', date: 'Feb 7' },
+      { id: 'exp8', domain: 'exp', title: 'Deploy concession map viewer', desc: 'GitHub Pages or Vercel - needs auth fix', status: 'todo', date: 'Feb 7' },
+    ];
+    let tasks = JSON.parse(localStorage.getItem('atlas-tasks'));
+    if (!tasks || tasks.length === 0) { tasks = defaultTasks; localStorage.setItem('atlas-tasks', JSON.stringify(tasks)); }
     let activeFilter = 'all';
     
     function saveTasks() {
